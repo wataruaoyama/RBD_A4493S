@@ -20,13 +20,17 @@
    て何らの責任を負わないものとします．
 */
 #include <Wire.h>
-//#include <U8g2lib.h>
-//#include "IRremote.h"
+#include "IRremote.h"
 
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <SSD1306Ascii.h>
+#include <SSD1306AsciiAvrI2c.h>
+
+//#include <Adafruit_GFX.h>
+//#include <Adafruit_SSD1306.h>
 
 #include <FreqCount.h>
+
+#define I2C_ADDRESS 0x3C
 
 #define AK4493S_ADR 0x10
 #define Control1 0x00
@@ -43,10 +47,10 @@
 #define Control7 0x0B
 #define Control8 0x15
 
-//U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, /*SCL, SDA,*/ /* reset=*/ U8X8_PIN_NONE);
-
 //126x64pixel SSD1306 OLED
-Adafruit_SSD1306 display(128, 64, &Wire, -1);
+//Adafruit_SSD1306 display(128, 64, &Wire, -1);
+
+SSD1306AsciiAvrI2c oled;
 
 //char pcm[] = "PCM ";
 //char dsd[] = "DSD ";
@@ -72,8 +76,8 @@ boolean go = LOW;
 uint8_t filter;
 
 /*-----( Declare objects )-----*/
-//IRrecv irrecv(receiver);     // create instance of 'irrecv'
-//decode_results results;      // create instance of 'decode_results'
+IRrecv irrecv(receiver);     // create instance of 'irrecv'
+decode_results results;      // create instance of 'decode_results'
 
 void setup() {
   int i;
@@ -99,9 +103,11 @@ void setup() {
   //u8g2.clearBuffer();
   
   // SSD1306のスレーブアドレスは0x3C
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-  display.clearDisplay();
-  display.display();
+//  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+//  display.clearDisplay();
+//  display.display();
+  
+  oled.begin(&Adafruit128x64, I2C_ADDRESS);
   
   delay(500);
   digitalWrite(PDN, HIGH);
@@ -114,12 +120,13 @@ void setup() {
   Serial.print("SW3 = "); Serial.println(dip3);
   initDigitalFilter(dipsw);
   Serial.print("filter = "); Serial.println(filter);
+  irrecv.enableIRIn(); // Start the receiver
 }
 
 void loop() {
-  //irReceiver();
+  irReceiver();
   uint16_t FSR = freqCounter();
-  displayOledFSR(FSR);
+//  displayOledFSR(FSR);
   selectLedDisplay(FSR, filter);
   delay(300);
 }
@@ -169,77 +176,58 @@ uint16_t freqCounter() {
 
 /* OLEDの初期化 */
 //void initOledDisplay() {
-//  u8g2.clearBuffer();
-//  u8g2.setFont(u8g2_font_helvB12_tr);
-//  u8g2.drawStr(10,14,"RBD-A4493S");
-//  u8g2.setFont(u8g2_font_helvR10_tr);
-//  u8g2.drawStr(20,36,"Designed by");
-//  u8g2.setFont(u8g2_font_helvB12_tr);
-//  u8g2.drawStr(20,60,"LINUXCOM");
-//  u8g2.sendBuffer();
+//  // Adafruitのロゴ表示データを消去
+//  display.clearDisplay();
+//  display.display();
+//  /* SSD1306 OLEDディスプレイに表示 */
+//  display.setTextColor(SSD1306_WHITE);
+//  display.setTextSize(2);
+//  display.setCursor(5, 10);
+//  display.println("RBD-A4493S");
+//  display.setTextSize(1);
+//  display.setCursor(30, 32);
+//  display.println("Desgined by");
+//  display.setTextSize(2);
+//  display.setCursor(20, 50);
+//  display.println("LINUXCOM");
+//  display.display();
 //}
+
+void initOledDisplay() {
+  oled.setFont(Arial14);
+  oled.clear();
+  oled.setCursor(20, 0);
+  oled.print("RBD-A4493S");
+  oled.setCursor(5, 3);
+  oled.print("Hi-Res DAC Board");
+  oled.setCursor(10, 5);
+  oled.print("for Raspberry Pi");
+  delay(3000);
+  oled.clear();
+  oled.setCursor(25, 1);
+  oled.print("Designed by");
+  oled.setCursor(0, 4);
+  oled.set2X();
+  oled.print("LINUXCOM");
+}
 
 //void displayOledFSR(uint16_t FSR) {
-//  u8g2.clearBuffer();
-//  u8g2.setFont(u8g2_font_helvR24_tr);
-//  u8g2.setCursor(22, 48);
-//  if (FSR == 32) u8g2.print(fs32);
-//  else if (FSR == 44) u8g2.print(fs44);
-//  else if (FSR == 48) u8g2.print(fs48);
-//  else if (FSR == 88) u8g2.print(fs88);
-//  else if (FSR == 96) u8g2.print(fs96);
-//  else if (FSR == 176) u8g2.print(fs176);
-//  else if (FSR == 192) u8g2.print(fs192);
-//  else if (FSR == 352) u8g2.print(fs352);
-//  else if (FSR == 384) u8g2.print(fs384);
-//  else if (FSR == 768) u8g2.print(fs768);
-////  else if (FSR == 2822) u8g2.print(fs282);
-////  else if (FSR == 5644) u8g2.print(fs564);
-////  else if (FSR == 1128) u8g2.print(fs1128);
-////  else if (FSR == 2256) u8g2.print(fs2256);
-//  else u8g2.print(nofs);
-//  u8g2.setFont(u8g2_font_helvR10_tr);
-//  if (FSR <=768) u8g2.print(" kHz");
-//  else if (FSR >=2822) u8g2.print(" MHz");
-//  u8g2.sendBuffer();
+//  display.clearDisplay();
+//  display.setTextSize(3);
+//  display.setCursor(30, 26);
+//  if (FSR == 32) display.println(fs32);
+//  else if (FSR == 44) display.println(fs44);
+//  else if (FSR == 48) display.println(fs48);
+//  else if (FSR == 88) display.println(fs88);
+//  else if (FSR == 96) display.println(fs96);
+//  else if (FSR == 176) display.println(fs176);
+//  else if (FSR == 192) display.println(fs192);
+//  else if (FSR == 352) display.println(fs352);
+//  else if (FSR == 384) display.println(fs384);
+//  else if (FSR == 768) display.println(fs768);
+//  //else display.println("No Signal");
+//  display.display();
 //}
-
-/* OLEDの初期化 */
-void initOledDisplay() {
-  // Adafruitのロゴ表示データを消去
-  display.clearDisplay();
-  display.display();
-  /* SSD1306 OLEDディスプレイに表示 */
-  display.setTextColor(SSD1306_WHITE);
-  display.setTextSize(2);
-  display.setCursor(5, 10);
-  display.println("RBD-A4493S");
-  display.setTextSize(1);
-  display.setCursor(30, 32);
-  display.println("Desgined by");
-  display.setTextSize(2);
-  display.setCursor(20, 50);
-  display.println("LINUXCOM");
-  display.display();
-}
-
-void displayOledFSR(uint16_t FSR) {
-  display.clearDisplay();
-  display.setTextSize(3);
-  display.setCursor(30, 26);
-  if (FSR == 32) display.println(fs32);
-  else if (FSR == 44) display.println(fs44);
-  else if (FSR == 48) display.println(fs48);
-  else if (FSR == 88) display.println(fs88);
-  else if (FSR == 96) display.println(fs96);
-  else if (FSR == 176) display.println(fs176);
-  else if (FSR == 192) display.println(fs192);
-  else if (FSR == 352) display.println(fs352);
-  else if (FSR == 384) display.println(fs384);
-  else if (FSR == 768) display.println(fs768);
-  //else display.println("No Signal");
-  display.display();
-}
 
 void initAK4493S() {
   /**********************
@@ -394,16 +382,16 @@ void selectLedDisplay(uint16_t fs, uint8_t filter) {
       digitalWrite(LED[1], LOW);
       digitalWrite(LED[2], HIGH);
     }
-    else if (filter == 6) {
+    else if ((filter == 6) || (filter == 0)){
       digitalWrite(LED[0], LOW);
       digitalWrite(LED[1], HIGH);
       digitalWrite(LED[2], HIGH);
     }
-    else {
-      digitalWrite(LED[0], LOW);
-      digitalWrite(LED[1], LOW);
-      digitalWrite(LED[2], LOW);
-    }
+//    else {
+//      digitalWrite(LED[0], LOW);
+//      digitalWrite(LED[1], LOW);
+//      digitalWrite(LED[2], LOW);
+//    }
   }
 }
 
@@ -490,35 +478,36 @@ void controlByIR()
   static int irkey = 0;
   static bool mute = true;
   
-//  if (irrecv.decode(&results)) // have we received an IR signal?
-//
-//  {   
-//    /* デジタルフィルタの切り替え */
-//    // リモコンのRIGHT（OptoSupplyは->）が押された場合
-//    if (results.value == 0x8F701FE) {
-//      filter++;
-//      if (filter == 1) {
-//        
-//      }
-//      else if (filter == 2) {
-//        
-//      }
-//      else if (filter == 3) {
-//        
-//      }
-//      else if (filter == 4) {
-//        
-//      }
-//      else if (filter == 5) {
-//        
-//      }
-//      else if (filter == 6) {
-//        filter = 0;
-//      }
-//    }
-//    irrecv.resume(); // receive the next value
-//    if (results.value != 0xFFFFFFFF) irkey = results.value;
-//    //Serial.print("irkey = 0x"); Serial.println(irkey, HEX);
-//  }
+  if (irrecv.decode(&results)) // have we received an IR signal?
+
+  {   
+    /* デジタルフィルタの切り替え */
+    // リモコンのRIGHT（OptoSupplyは->）が押された場合
+    if (results.value == 0x8F701FE) {
+      filter++;
+      Serial.print("filter = "); Serial.println(filter);
+      if (filter == 1) {
+        
+      }
+      else if (filter == 2) {
+        
+      }
+      else if (filter == 3) {
+        
+      }
+      else if (filter == 4) {
+        
+      }
+      else if (filter == 5) {
+        
+      }
+      else if (filter == 6) {
+        filter = 0;
+      }
+    }
+    irrecv.resume(); // receive the next value
+    //if (results.value != 0xFFFFFFFF) irkey = results.value;
+    //Serial.print("filter = "); Serial.println(filter);
+  }
   delay(100);
 }
