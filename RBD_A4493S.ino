@@ -20,17 +20,13 @@
    て何らの責任を負わないものとします．
 */
 #include <Wire.h>
-#include "IRremote.h"
-
-#include <SSD1306Ascii.h>
-#include <SSD1306AsciiAvrI2c.h>
+#include <U8g2lib.h>
+//#include "IRremote.h"
 
 //#include <Adafruit_GFX.h>
 //#include <Adafruit_SSD1306.h>
 
 #include <FreqCount.h>
-
-#define I2C_ADDRESS 0x3C
 
 #define AK4493S_ADR 0x10
 #define Control1 0x00
@@ -47,24 +43,34 @@
 #define Control7 0x0B
 #define Control8 0x15
 
+U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2, /*SCL, SDA,*/ /* reset=*/ U8X8_PIN_NONE);
+
 //126x64pixel SSD1306 OLED
 //Adafruit_SSD1306 display(128, 64, &Wire, -1);
 
-SSD1306AsciiAvrI2c oled;
-
 //char pcm[] = "PCM ";
 //char dsd[] = "DSD ";
-char fs32[] = "32";
-char fs44[] = "44.1";
-char fs48[] = "48";
-char fs88[] = "88.2";
-char fs96[] = "96";
-char fs176[] = "176.4";
-char fs192[] = "192";
-char fs352[] = "352.8";
-char fs384[] = "384";
-char fs768[] = "768";
-char nofs[] = "";
+//char fs32[] = "32";
+//char fs44[] = "44.1";
+//char fs48[] = "48";
+//char fs88[] = "88.2";
+//char fs96[] = "96";
+//char fs176[] = "176.4";
+//char fs192[] = "192";
+//char fs352[] = "352.8";
+//char fs384[] = "384";
+//char fs768[] = "768";
+//char nofs[] = "";
+//char sp[] = "Sharp Roll-Off";
+//char sw[] = "Slow Roll-Off";
+//char sdsp[] = "Short Delay Sharp";
+//char sdsw[] = "Short Delay Slow";
+//char ssw[] = "Super Slow";
+//char ldn[] = "Low Dispersion";
+//char bname[] = "RBD-A4493S";
+//char dsn[] = "Designed by";
+//char logo[] = "LINUXCOM";
+
 uint8_t SW[] = {14, 15, 16};
 uint8_t LED[] = {7, 8, 13};
 uint8_t SW3 = 10;
@@ -76,8 +82,8 @@ boolean go = LOW;
 uint8_t filter;
 
 /*-----( Declare objects )-----*/
-IRrecv irrecv(receiver);     // create instance of 'irrecv'
-decode_results results;      // create instance of 'decode_results'
+//IRrecv irrecv(receiver);     // create instance of 'irrecv'
+//decode_results results;      // create instance of 'decode_results'
 
 void setup() {
   int i;
@@ -99,15 +105,13 @@ void setup() {
 //    go = digitalRead(RPI_OK);
 //  }
 
-  //u8g2.begin();
-  //u8g2.clearBuffer();
+  u8g2.begin();
+  u8g2.clearBuffer();
   
   // SSD1306のスレーブアドレスは0x3C
 //  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
 //  display.clearDisplay();
 //  display.display();
-  
-  oled.begin(&Adafruit128x64, I2C_ADDRESS);
   
   delay(500);
   digitalWrite(PDN, HIGH);
@@ -115,19 +119,20 @@ void setup() {
   initOledDisplay();
   delay(4000);
   uint8_t dipsw = readDipSwitch();
-  Serial.print("SW Status = "); Serial.println(dipsw);
+  //Serial.print("SW Status = "); Serial.println(dipsw);
   uint8_t dip3 = digitalRead(SW3);
-  Serial.print("SW3 = "); Serial.println(dip3);
+  //Serial.print("SW3 = "); Serial.println(dip3);
   initDigitalFilter(dipsw);
-  Serial.print("filter = "); Serial.println(filter);
-  irrecv.enableIRIn(); // Start the receiver
+  //Serial.print("filter = "); Serial.println(filter);
+//  irrecv.enableIRIn(); // Start the receiver
 }
 
 void loop() {
-  irReceiver();
+//  irReceiver();
   uint16_t FSR = freqCounter();
-//  displayOledFSR(FSR);
-  selectLedDisplay(FSR, filter);
+  messageOut(FSR, filter);
+  //displayOledFSR(FSR);
+  monitorLED(FSR, filter);
   delay(300);
 }
 
@@ -175,6 +180,122 @@ uint16_t freqCounter() {
 }
 
 /* OLEDの初期化 */
+void initOledDisplay() {
+  uint8_t x;
+  u8g2.clearBuffer();
+  u8g2.setFont(u8g2_font_helvB12_tr);
+  x = u8g2.getStrWidth("RBD-A4493S");//bname);
+  u8g2.drawStr(64-(x/2),14,"RBD-A4493S");//bname);
+  u8g2.setFont(u8g2_font_helvR10_tr);
+  x = u8g2.getStrWidth("Designed by");//dsn);
+  u8g2.drawStr(64-(x/2),36,"Designed by");//dsn);
+  u8g2.setFont(u8g2_font_helvB12_tr);
+  x = u8g2.getStrWidth("LINUXCOM");//logo);
+  u8g2.drawStr(64-(x/2),60,"LINUXCOM");//logo);
+  u8g2.sendBuffer();
+}
+
+void messageOut(uint16_t FSR, uint8_t filter) {
+  u8g2.clearBuffer();
+  displayOledFSR(FSR);
+  displayFilter(filter);
+  u8g2.sendBuffer();
+}
+void displayOledFSR(uint16_t FSR) {
+  uint8_t x;
+  //u8g2.clearBuffer();
+  //u8g2.setFont(u8g2_font_helvR24_tr);
+  //u8g2.setFont(u8g2_font_fub30_tn);
+  u8g2.setFont(u8g2_font_fur30_tr);
+  //u8g2.setFont(u8g2_font_freedoomr25_tn);
+  u8g2.setCursor(22, 38);
+  if (FSR == 32) {
+    x = u8g2.getStrWidth("32");
+    u8g2.drawStr(64-(x/2), 38, "32");
+  }
+  else if (FSR == 44) {
+    x = u8g2.getStrWidth("44.1");
+    u8g2.drawStr(64-(x/2), 38, "44.1");
+  }
+  else if (FSR == 48) {
+    x = u8g2.getStrWidth("48");
+    u8g2.drawStr(64-(x/2), 38, "48");
+  }
+  else if (FSR == 88) {
+    x = u8g2.getStrWidth("88.2");//fs88);
+    u8g2.drawStr(64-(x/2), 38, "88.2");//fs88);
+  }
+  else if (FSR == 96) {
+    x = u8g2.getStrWidth("96");//fs96);
+    u8g2.drawStr(64-(x/2), 38, "96");//fs96);
+  }
+  else if (FSR == 176) {
+    x = u8g2.getStrWidth("176.4");//fs176);
+    u8g2.drawStr(64-(x/2), 38, "176.4");//fs176);
+  }
+  else if (FSR == 192) {
+    x = u8g2.getStrWidth("192");//fs192);
+    u8g2.drawStr(64-(x/2), 38, "192");//fs192);
+  }
+  else if (FSR == 352) {
+    x = u8g2.getStrWidth("352.8");//fs352);
+    u8g2.drawStr(64-(x/2), 38, "352.8");//fs352);
+  }
+  else if (FSR == 384) {
+    x = u8g2.getStrWidth("384");//fs384);
+    u8g2.drawStr(64-(x/2), 38, "384");//fs384);    
+  }
+//  else if (FSR == 768) u8g2.print(fs768);
+//  else if (FSR == 2822) u8g2.print(fs282);
+//  else if (FSR == 5644) u8g2.print(fs564);
+//  else if (FSR == 1128) u8g2.print(fs1128);
+//  else if (FSR == 2256) u8g2.print(fs2256);
+  else if ((FSR < 32) || (FSR > 384)) {
+    u8g2.setFont(u8g2_font_helvR12_tr);
+    x = u8g2.getStrWidth("No Signal");
+    u8g2.drawStr(64-(x/2),38,"No Signal");
+//    u8g2.setCursor(10, 38);
+//    u8g2.print("No Signal");
+  }
+}
+
+void displayFilter(uint8_t filter) {
+  uint8_t x;
+  //u8g2.setCursor(0, 60);
+  u8g2.setFont(u8g2_font_helvR10_tr);
+  if (filter == 1) {
+    x = u8g2.getStrWidth("Sharp Roll-Off");//sp);
+    u8g2.drawStr(64-(x/2), 62, "Sharp Roll-Off");//sp); 
+    //u8g2.print(sp);
+  }
+  else if (filter == 2) {
+    x = u8g2.getStrWidth("Slow Roll-Off");//sw);
+    u8g2.drawStr(64-(x/2), 62, "Slow Roll-Off");//sw); 
+    //u8g2.print(sw);
+  }
+  else if (filter == 3) {
+    x = u8g2.getStrWidth("Short Delay Sharp");//sdsp);
+    u8g2.drawStr(64-(x/2), 62, "Short Delay Sharp");//sdsp); 
+    //u8g2.print(sdsp);
+  }
+  else if (filter == 4) {
+    x = u8g2.getStrWidth("Short Delay Slow");//sdsw);
+    u8g2.drawStr(64-(x/2), 62, "Short Delay Slow");//sdsw); 
+    //u8g2.print(sdsw);
+  }
+  else if (filter == 5) {
+    x = u8g2.getStrWidth("Super Slow");//ssw);
+    u8g2.drawStr(64-(x/2), 62, "Super Slow");//ssw); 
+    //u8g2.print(ssw);
+  }
+  else if (filter == 6) {
+    x = u8g2.getStrWidth("Low Dispersion");//ldn);
+    u8g2.drawStr(64-(x/2), 62, "Low Dispersion");//ldn); 
+    //u8g2.print(ldn);
+  }
+}
+
+/* OLEDの初期化 */
 //void initOledDisplay() {
 //  // Adafruitのロゴ表示データを消去
 //  display.clearDisplay();
@@ -193,24 +314,6 @@ uint16_t freqCounter() {
 //  display.display();
 //}
 
-void initOledDisplay() {
-  oled.setFont(Arial14);
-  oled.clear();
-  oled.setCursor(20, 0);
-  oled.print("RBD-A4493S");
-  oled.setCursor(5, 3);
-  oled.print("Hi-Res DAC Board");
-  oled.setCursor(10, 5);
-  oled.print("for Raspberry Pi");
-  delay(3000);
-  oled.clear();
-  oled.setCursor(25, 1);
-  oled.print("Designed by");
-  oled.setCursor(0, 4);
-  oled.set2X();
-  oled.print("LINUXCOM");
-}
-
 //void displayOledFSR(uint16_t FSR) {
 //  display.clearDisplay();
 //  display.setTextSize(3);
@@ -224,8 +327,11 @@ void initOledDisplay() {
 //  else if (FSR == 192) display.println(fs192);
 //  else if (FSR == 352) display.println(fs352);
 //  else if (FSR == 384) display.println(fs384);
-//  else if (FSR == 768) display.println(fs768);
-//  //else display.println("No Signal");
+//  else if (FSR >= 768) {
+//    display.setTextSize(2);
+//    display.setCursor(10, 26);
+//    display.println("No Signal");
+//  }
 //  display.display();
 //}
 
@@ -299,15 +405,15 @@ void initDigitalFilter(uint8_t switchState) {
     filter = 6;    
   }
   /* ショートディレイ・スローロールオフ */
-  else {
-    i2cWriteRegister(AK4493S_ADR, Control3, 0x00);  // SLOWビットを0
-    i2cWriteRegister(AK4493S_ADR, Control2, 0x22);  // SDビットを1
-    i2cWriteRegister(AK4493S_ADR, Control4, 0x00);  // SSLOWビットを0
-    filter = 3;    
-  }
+//  else {
+//    i2cWriteRegister(AK4493S_ADR, Control3, 0x00);  // SLOWビットを0
+//    i2cWriteRegister(AK4493S_ADR, Control2, 0x22);  // SDビットを1
+//    i2cWriteRegister(AK4493S_ADR, Control4, 0x00);  // SSLOWビットを0
+//    filter = 3;    
+//  }
 }
 
-void selectLedDisplay(uint16_t fs, uint8_t filter) {
+void monitorLED(uint16_t fs, uint8_t filter) {
   boolean fil_fs = digitalRead(SW3);
   if (fil_fs == LOW) {
     if (fs == 32) {
@@ -387,11 +493,6 @@ void selectLedDisplay(uint16_t fs, uint8_t filter) {
       digitalWrite(LED[1], HIGH);
       digitalWrite(LED[2], HIGH);
     }
-//    else {
-//      digitalWrite(LED[0], LOW);
-//      digitalWrite(LED[1], LOW);
-//      digitalWrite(LED[2], LOW);
-//    }
   }
 }
 
@@ -478,36 +579,35 @@ void controlByIR()
   static int irkey = 0;
   static bool mute = true;
   
-  if (irrecv.decode(&results)) // have we received an IR signal?
-
-  {   
-    /* デジタルフィルタの切り替え */
-    // リモコンのRIGHT（OptoSupplyは->）が押された場合
-    if (results.value == 0x8F701FE) {
-      filter++;
-      Serial.print("filter = "); Serial.println(filter);
-      if (filter == 1) {
-        
-      }
-      else if (filter == 2) {
-        
-      }
-      else if (filter == 3) {
-        
-      }
-      else if (filter == 4) {
-        
-      }
-      else if (filter == 5) {
-        
-      }
-      else if (filter == 6) {
-        filter = 0;
-      }
-    }
-    irrecv.resume(); // receive the next value
-    //if (results.value != 0xFFFFFFFF) irkey = results.value;
-    //Serial.print("filter = "); Serial.println(filter);
-  }
-  delay(100);
+//  if (irrecv.decode(&results)) // have we received an IR signal?
+//
+//  {   
+//    /* デジタルフィルタの切り替え */
+//    // リモコンのRIGHT（OptoSupplyは->）が押された場合
+//    if (results.value == 0x8F701FE) {
+//      filter++;
+//      if (filter == 1) {
+//        
+//      }
+//      else if (filter == 2) {
+//        
+//      }
+//      else if (filter == 3) {
+//        
+//      }
+//      else if (filter == 4) {
+//        
+//      }
+//      else if (filter == 5) {
+//        
+//      }
+//      else if (filter == 6) {
+//        filter = 0;
+//      }
+//    }
+//    irrecv.resume(); // receive the next value
+//    if (results.value != 0xFFFFFFFF) irkey = results.value;
+//    //Serial.print("irkey = 0x"); Serial.println(irkey, HEX);
+//  }
+//  delay(100);
 }
