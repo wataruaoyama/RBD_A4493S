@@ -42,30 +42,30 @@ U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2, /*SCL, SDA,*/ /* reset=*/ U8X8
 
 //char pcm[] = "PCM ";
 //char dsd[] = "DSD ";
-//char fs32[] = "32";
-//char fs44[] = "44.1";
-//char fs48[] = "48";
-//char fs88[] = "88.2";
-//char fs96[] = "96";
-//char fs176[] = "176.4";
-//char fs192[] = "192";
-//char fs352[] = "352.8";
-//char fs384[] = "384";
+char fs32[] = "32";
+char fs44[] = "44.1";
+char fs48[] = "48";
+char fs88[] = "88.2";
+char fs96[] = "96";
+char fs176[] = "176.4";
+char fs192[] = "192";
+char fs352[] = "352.8";
+char fs384[] = "384";
 //char fs768[] = "768";
 //char nofs[] = "";
-//char sp[] = "Sharp Roll-Off";
-//char sw[] = "Slow Roll-Off";
-//char sdsp[] = "Short Delay Sharp";
-//char sdsw[] = "Short Delay Slow";
-//char ssw[] = "Super Slow";
-//char ldn[] = "Low Dispersion";
-//char bname[] = "RBD-A4493S";
-//char dsn[] = "Designed by";
-//char logo[] = "LINUXCOM";
+char sp[] = "Sharp Roll-Off";
+char sw[] = "Slow Roll-Off";
+char sdsp[] = "Short Delay Sharp";
+char sdsw[] = "Short Delay Slow";
+char ssw[] = "Super Slow";
+char ldn[] = "Low Dispersion";
+char bname[] = "RBD-A4493S";
+char dsn[] = "Designed by";
+char logo[] = "LINUXCOM";
 
 uint8_t SW[] = {14, 15, 16};
 uint8_t LED[] = {7, 8, 13};
-uint8_t SW3 = 10;
+uint8_t SW3 = 2;
 uint8_t RPI_OK = 9;
 uint8_t PDN = 17;
 uint8_t receiver = 6;
@@ -162,14 +162,14 @@ void initOledDisplay() {
   uint8_t x;
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_helvB12_tr);
-  x = u8g2.getStrWidth("RBD-A4493S");//bname);
-  u8g2.drawStr(64-(x/2),14,"RBD-A4493S");//bname);
+  x = u8g2.getStrWidth(bname);
+  u8g2.drawStr(64-(x/2),14,bname);
   u8g2.setFont(u8g2_font_helvR10_tr);
-  x = u8g2.getStrWidth("Designed by");//dsn);
-  u8g2.drawStr(64-(x/2),36,"Designed by");//dsn);
+  x = u8g2.getStrWidth(dsn);
+  u8g2.drawStr(64-(x/2),36,dsn);
   u8g2.setFont(u8g2_font_helvB12_tr);
-  x = u8g2.getStrWidth("LINUXCOM");//logo);
-  u8g2.drawStr(64-(x/2),60,"LINUXCOM");//logo);
+  x = u8g2.getStrWidth(logo);
+  u8g2.drawStr(64-(x/2),60,logo);
   u8g2.sendBuffer();
 }
 
@@ -187,74 +187,74 @@ void displayOledFSR(uint16_t FSR) {
   u8g2.setFont(u8g2_font_fur30_tr);
   //u8g2.setFont(u8g2_font_freedoomr25_tn);
   if (FSR == 32) {
-    x = u8g2.getStrWidth("32");//fs32);
-    u8g2.drawStr(64-(x/2), 36, "32");//fs32);
+    x = u8g2.getStrWidth(fs32);
+    u8g2.drawStr(64-(x/2), 42, fs32);
   }
   else if (FSR == 44) {
-    x = u8g2.getStrWidth("44.1");//fs44);
-    u8g2.drawStr(64-(x/2), 36, "44.1");//fs44);
+    x = u8g2.getStrWidth(fs44);
+    u8g2.drawStr(64-(x/2), 42, fs44);
   }
   else if (FSR == 48) {
-    x = u8g2.getStrWidth("48");
-    u8g2.drawStr(64-(x/2), 36, "48");
+    x = u8g2.getStrWidth(fs48);
+    u8g2.drawStr(64-(x/2), 42, fs48);
   }
   else if (FSR == 88) {
-    x = u8g2.getStrWidth("88.2");//fs88);
-    u8g2.drawStr(64-(x/2), 36, "88.2");//fs88);
+    x = u8g2.getStrWidth(fs88);
+    u8g2.drawStr(64-(x/2), 42, fs88);
   }
   else if (FSR == 96) {
-    x = u8g2.getStrWidth("96");//fs96);
-    u8g2.drawStr(64-(x/2), 36, "96");//fs96);
+    x = u8g2.getStrWidth(fs96);
+    u8g2.drawStr(64-(x/2), 42, fs96);
   }
   else if (FSR == 176) {
-    x = u8g2.getStrWidth("176.4");//fs176);
-    u8g2.drawStr(64-(x/2), 36, "176.4");//fs176);
+    x = u8g2.getStrWidth(fs176);
+    u8g2.drawStr(64-(x/2), 42, fs176);
   }
   else if (FSR == 192) {
-    x = u8g2.getStrWidth("192");//fs192);
-    u8g2.drawStr(64-(x/2), 36, "192");//fs192);
+    x = u8g2.getStrWidth(fs192);
+    u8g2.drawStr(64-(x/2), 42, fs192);
   }
   else if (FSR == 352) {
-    x = u8g2.getStrWidth("352.8");//fs352);
-    u8g2.drawStr(64-(x/2), 36, "352.8");//fs352);
+    x = u8g2.getStrWidth(fs352);
+    u8g2.drawStr(64-(x/2), 42, fs352);
   }
   else if (FSR == 384) {
-    x = u8g2.getStrWidth("384");//fs384);
-    u8g2.drawStr(64-(x/2), 36, "384");//fs384);    
+    x = u8g2.getStrWidth(fs384);
+    u8g2.drawStr(64-(x/2), 42, fs384);    
   }
   else if ((FSR < 32) || (FSR > 384)) {
     u8g2.setFont(u8g2_font_helvR12_tr);
     x = u8g2.getStrWidth("No Signal");
-    u8g2.drawStr(64-(x/2),36,"No Signal");
+    u8g2.drawStr(64-(x/2),42,"No Signal");
   }
 }
 
 void displayFilter(uint8_t filter) {
   uint8_t x;
-  u8g2.setFont(u8g2_font_helvR10_tr);
+  u8g2.setFont(u8g2_font_helvR08_tr);
   if (filter == 1) {
-    x = u8g2.getStrWidth("Sharp Roll-Off");//sp);
-    u8g2.drawStr(64-(x/2), 62, "Sharp Roll-Off");//sp); 
+    x = u8g2.getStrWidth(sp);
+    u8g2.drawStr(64-(x/2), 60, sp); 
   }
   else if (filter == 2) {
-    x = u8g2.getStrWidth("Slow Roll-Off");//sw);
-    u8g2.drawStr(64-(x/2), 62, "Slow Roll-Off");//sw); 
+    x = u8g2.getStrWidth(sw);
+    u8g2.drawStr(64-(x/2), 60, sw); 
   }
   else if (filter == 3) {
-    x = u8g2.getStrWidth("Short Delay Sharp");//sdsp);
-    u8g2.drawStr(64-(x/2), 62, "Short Delay Sharp");//sdsp); 
+    x = u8g2.getStrWidth(sdsp);
+    u8g2.drawStr(64-(x/2), 60, sdsp); 
   }
   else if (filter == 4) {
-    x = u8g2.getStrWidth("Short Delay Slow");//sdsw);
-    u8g2.drawStr(64-(x/2), 62, "Short Delay Slow");//sdsw); 
+    x = u8g2.getStrWidth(sdsw);
+    u8g2.drawStr(64-(x/2), 60, sdsw); 
   }
   else if (filter == 5) {
-    x = u8g2.getStrWidth("Super Slow");//ssw);
-    u8g2.drawStr(64-(x/2), 62, "Super Slow");//ssw); 
+    x = u8g2.getStrWidth(ssw);
+    u8g2.drawStr(64-(x/2), 60, ssw); 
   }
   else if (filter == 6) {
-    x = u8g2.getStrWidth("Low Dispersion");//ldn);
-    u8g2.drawStr(64-(x/2), 62, "Low Dispersion");//ldn); 
+    x = u8g2.getStrWidth(ldn);
+    u8g2.drawStr(64-(x/2), 60, ldn); 
   }
 }
 
