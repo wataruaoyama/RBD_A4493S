@@ -20,6 +20,7 @@
    て何らの責任を負わないものとします．
 */
 #include <Wire.h>
+#include <avr/pgmspace.h>
 #include <U8g2lib.h>
 #include <FreqCount.h>
 
@@ -40,28 +41,25 @@
 
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R2, /*SCL, SDA,*/ /* reset=*/ U8X8_PIN_NONE);
 
-//char pcm[] = "PCM ";
-//char dsd[] = "DSD ";
-char fs32[] = "32";
-char fs44[] = "44.1";
-char fs48[] = "48";
-char fs88[] = "88.2";
-char fs96[] = "96";
-char fs176[] = "176.4";
-char fs192[] = "192";
-char fs352[] = "352.8";
-char fs384[] = "384";
-//char fs768[] = "768";
-//char nofs[] = "";
-char sp[] = "Sharp Roll-Off";
-char sw[] = "Slow Roll-Off";
-char sdsp[] = "Short Delay Sharp";
-char sdsw[] = "Short Delay Slow";
-char ssw[] = "Super Slow";
-char ldn[] = "Low Dispersion";
-char bname[] = "RBD-A4493S";
-char dsn[] = "Designed by";
-char logo[] = "LINUXCOM";
+const char fs32[] PROGMEM = "32";
+const char fs44[] PROGMEM = "44.1";
+const char fs48[] PROGMEM = "48";
+const char fs88[] PROGMEM = "88.2";
+const char fs96[] PROGMEM = "96";
+const char fs176[] PROGMEM = "176.4";
+const char fs192[] PROGMEM = "192";
+const char fs352[] PROGMEM = "352.8";
+const char fs384[] PROGMEM = "384";
+const char sp[] PROGMEM = "Sharp Roll-Off";
+const char sw[] PROGMEM = "Slow Roll-Off";
+const char sdsp[] PROGMEM = "Short Delay Sharp";
+const char sdsw[] PROGMEM = "Short Delay Slow";
+const char ssw[] PROGMEM = "Super Slow";
+const char ldn[] PROGMEM = "Low Dispersion";
+const char bname[] PROGMEM = "RBD-A4493S";
+const char dsn[] PROGMEM = "Designed by";
+const char logo[] PROGMEM = "LINUXCOM";
+const char no_signal[] PROGMEM = "No Signal";
 
 uint8_t SW[] = {14, 15, 16};
 uint8_t LED[] = {7, 8, 13};
@@ -85,7 +83,7 @@ void setup() {
   pinMode(PDN, OUTPUT);
   pinMode(LED, OUTPUT);
 
-  Serial.begin(9600);
+//  Serial.begin(9600);
   FreqCount.begin(10);  // 周波数測定の開始．測定間隔を10ミリ秒に設定
   Wire.begin();
   Wire.setClock(400000);
@@ -159,17 +157,23 @@ uint16_t freqCounter() {
 
 /* OLEDの初期化 */
 void initOledDisplay() {
-  uint8_t x;
+  uint8_t x, y;
+  char message_buffer[20];
   u8g2.clearBuffer();
   u8g2.setFont(u8g2_font_helvB12_tr);
-  x = u8g2.getStrWidth(bname);
-  u8g2.drawStr(64-(x/2),14,bname);
+  strcpy_P(message_buffer, bname);  
+  x = u8g2.getStrWidth(message_buffer);
+  y = u8g2.getFontAscent();
+  u8g2.drawStr(64-(x/2),y,message_buffer);
   u8g2.setFont(u8g2_font_helvR10_tr);
-  x = u8g2.getStrWidth(dsn);
-  u8g2.drawStr(64-(x/2),36,dsn);
+  strcpy_P(message_buffer, dsn);    
+  x = u8g2.getStrWidth(message_buffer);
+  y = u8g2.getFontAscent();
+  u8g2.drawStr(64-(x/2),32+(y/2),message_buffer);
   u8g2.setFont(u8g2_font_helvB12_tr);
-  x = u8g2.getStrWidth(logo);
-  u8g2.drawStr(64-(x/2),60,logo);
+  strcpy_P(message_buffer, logo);
+  x = u8g2.getStrWidth(message_buffer);
+  u8g2.drawStr(64-(x/2),63,message_buffer);
   u8g2.sendBuffer();
 }
 
@@ -181,81 +185,40 @@ void messageOut(uint16_t FSR, uint8_t filter) {
 }
 
 void displayOledFSR(uint16_t FSR) {
-  uint8_t x;
+  uint8_t x,y;
+  char message_buffer[20];
   //u8g2.setFont(u8g2_font_helvR24_tr);
   //u8g2.setFont(u8g2_font_fub30_tn);
   u8g2.setFont(u8g2_font_fur30_tr);
   //u8g2.setFont(u8g2_font_freedoomr25_tn);
-  if (FSR == 32) {
-    x = u8g2.getStrWidth(fs32);
-    u8g2.drawStr(64-(x/2), 42, fs32);
-  }
-  else if (FSR == 44) {
-    x = u8g2.getStrWidth(fs44);
-    u8g2.drawStr(64-(x/2), 42, fs44);
-  }
-  else if (FSR == 48) {
-    x = u8g2.getStrWidth(fs48);
-    u8g2.drawStr(64-(x/2), 42, fs48);
-  }
-  else if (FSR == 88) {
-    x = u8g2.getStrWidth(fs88);
-    u8g2.drawStr(64-(x/2), 42, fs88);
-  }
-  else if (FSR == 96) {
-    x = u8g2.getStrWidth(fs96);
-    u8g2.drawStr(64-(x/2), 42, fs96);
-  }
-  else if (FSR == 176) {
-    x = u8g2.getStrWidth(fs176);
-    u8g2.drawStr(64-(x/2), 42, fs176);
-  }
-  else if (FSR == 192) {
-    x = u8g2.getStrWidth(fs192);
-    u8g2.drawStr(64-(x/2), 42, fs192);
-  }
-  else if (FSR == 352) {
-    x = u8g2.getStrWidth(fs352);
-    u8g2.drawStr(64-(x/2), 42, fs352);
-  }
-  else if (FSR == 384) {
-    x = u8g2.getStrWidth(fs384);
-    u8g2.drawStr(64-(x/2), 42, fs384);    
-  }
-  else if ((FSR < 32) || (FSR > 384)) {
-    u8g2.setFont(u8g2_font_helvR12_tr);
-    x = u8g2.getStrWidth("No Signal");
-    u8g2.drawStr(64-(x/2),42,"No Signal");
-  }
+  if (FSR == 32) strcpy_P(message_buffer, fs32);
+  else if (FSR == 44) strcpy_P(message_buffer, fs44);
+  else if (FSR == 48) strcpy_P(message_buffer, fs48);
+  else if (FSR == 88) strcpy_P(message_buffer, fs88);
+  else if (FSR == 96) strcpy_P(message_buffer, fs96);
+  else if (FSR == 176) strcpy_P(message_buffer, fs176);
+  else if (FSR == 192) strcpy_P(message_buffer, fs192);
+  else if (FSR == 352) strcpy_P(message_buffer, fs352);
+  else if (FSR == 384) strcpy_P(message_buffer, fs384);
+  else strcpy_P(message_buffer, no_signal);
+  x = u8g2.getStrWidth(message_buffer);
+  y = u8g2.getFontAscent();
+  u8g2.drawStr(64-(x/2), 32+((y/2)-8), message_buffer);
 }
 
 void displayFilter(uint8_t filter) {
-  uint8_t x;
+  uint8_t x,y;
+  char message_buffer[20];
   u8g2.setFont(u8g2_font_helvR08_tr);
-  if (filter == 1) {
-    x = u8g2.getStrWidth(sp);
-    u8g2.drawStr(64-(x/2), 60, sp); 
-  }
-  else if (filter == 2) {
-    x = u8g2.getStrWidth(sw);
-    u8g2.drawStr(64-(x/2), 60, sw); 
-  }
-  else if (filter == 3) {
-    x = u8g2.getStrWidth(sdsp);
-    u8g2.drawStr(64-(x/2), 60, sdsp); 
-  }
-  else if (filter == 4) {
-    x = u8g2.getStrWidth(sdsw);
-    u8g2.drawStr(64-(x/2), 60, sdsw); 
-  }
-  else if (filter == 5) {
-    x = u8g2.getStrWidth(ssw);
-    u8g2.drawStr(64-(x/2), 60, ssw); 
-  }
-  else if (filter == 6) {
-    x = u8g2.getStrWidth(ldn);
-    u8g2.drawStr(64-(x/2), 60, ldn); 
-  }
+  if (filter == 1) strcpy_P(message_buffer, sp);
+  else if (filter == 2) strcpy_P(message_buffer, sw);
+  else if (filter == 3) strcpy_P(message_buffer, sdsp);
+  else if (filter == 4) strcpy_P(message_buffer, sdsw);
+  else if (filter == 5) strcpy_P(message_buffer, ssw);
+  else if (filter == 6) strcpy_P(message_buffer, ldn);
+  x = u8g2.getStrWidth(message_buffer);
+  y = u8g2.getFontAscent();
+  u8g2.drawStr(64-(x/2), 60, message_buffer);
 }
 
 void initAK4493S() {
