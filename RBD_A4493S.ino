@@ -59,15 +59,19 @@ const char ldn[] PROGMEM = "Low Dispersion";
 const char bname[] PROGMEM = "RBD-A4493S";
 const char dsn[] PROGMEM = "Designed by";
 const char logo[] PROGMEM = "LINUXCOM";
-const char no_signal[] PROGMEM = "No Signal";
+const char no_signal[] PROGMEM = "NO SIGNAL";
+const char blank[] PROGMEM = "";
+const char wait[] PROGMEM = "Waiting for";
+const char rapi[] PROGMEM = "Raspberry Pi";
+//const char welcom[] PROGMEM = "Welcom to";
+//const char world[] PROGMEM = "Hi-Res World!";
 
 uint8_t SW[] = {14, 15, 16};
 uint8_t LED[] = {7, 8, 13};
 uint8_t SW3 = 2;
-uint8_t RPI_OK = 9;
+uint8_t RPI_OK = 3;
 uint8_t PDN = 17;
 uint8_t receiver = 6;
-boolean go = LOW;
 
 uint8_t filter;
 
@@ -90,10 +94,6 @@ void setup() {
   u8g2.begin();
   u8g2.clearBuffer();
   
-//  while(go == LOW) {
-//    go = digitalRead(RPI_OK);
-//  }
-
   delay(500);
   digitalWrite(PDN, HIGH);
   initAK4493S();
@@ -106,10 +106,11 @@ void setup() {
 }
 
 void loop() {
+  waitRPI();
   uint16_t FSR = freqCounter();
   messageOut(FSR, filter);
   monitorLED(FSR, filter);
-  //delay(300);
+//  delay(30);
 }
 
 uint8_t i2cReadRegister(uint8_t sladr, uint8_t regadr) {
@@ -177,10 +178,44 @@ void initOledDisplay() {
   u8g2.sendBuffer();
 }
 
+void waitRPI() {
+  uint8_t x,y;
+  char message_buffer[20];
+  boolean go = LOW;
+    u8g2.clearBuffer();
+    u8g2.setFont(u8g2_font_helvB12_tr);
+  while(go == LOW) {
+    go = digitalRead(RPI_OK);
+    if (go == LOW){
+      strcpy_P(message_buffer, wait);
+      x = u8g2.getStrWidth(message_buffer);
+      y = u8g2.getFontAscent();
+      u8g2.drawStr(64-(x/2), 16+(y/2), message_buffer);
+      strcpy_P(message_buffer, rapi);
+      x = u8g2.getStrWidth(message_buffer);
+      y = u8g2.getFontAscent();
+      u8g2.drawStr(64-(x/2), 48+(y/2), message_buffer);
+      u8g2.sendBuffer();
+    }
+//    else {
+//      strcpy_P(message_buffer, welcom);
+//      x = u8g2.getStrWidth(message_buffer);
+//      y = u8g2.getFontAscent();
+//      u8g2.drawStr(64-(x/2), 16+(y/2), message_buffer);
+//      strcpy_P(message_buffer, world);
+//      x = u8g2.getStrWidth(message_buffer);
+//      y = u8g2.getFontAscent();
+//      u8g2.drawStr(64-(x/2), 48+(y/2), message_buffer);
+//      u8g2.sendBuffer();
+//      delay(2000);
+//    } 
+  }
+}
+
 void messageOut(uint16_t FSR, uint8_t filter) {
   u8g2.clearBuffer();
   displayOledFSR(FSR);
-  displayFilter(filter);
+  displayFilter(filter, FSR);
   u8g2.sendBuffer();
 }
 
@@ -200,25 +235,33 @@ void displayOledFSR(uint16_t FSR) {
   else if (FSR == 192) strcpy_P(message_buffer, fs192);
   else if (FSR == 352) strcpy_P(message_buffer, fs352);
   else if (FSR == 384) strcpy_P(message_buffer, fs384);
-  else strcpy_P(message_buffer, no_signal);
+  else {
+    u8g2.setFont(u8g2_font_helvB12_tr);
+    strcpy_P(message_buffer, no_signal);
+  }
   x = u8g2.getStrWidth(message_buffer);
   y = u8g2.getFontAscent();
-  u8g2.drawStr(64-(x/2), 32+((y/2)-8), message_buffer);
+  if ((FSR < 32) || (FSR > 384)) {
+    u8g2.drawStr(64-(x/2), 32+((y/2)), message_buffer);
+  }
+  else u8g2.drawStr(64-(x/2), 32+((y/2)-8), message_buffer);
 }
 
-void displayFilter(uint8_t filter) {
+void displayFilter(uint8_t filter, uint16_t FSR) {
   uint8_t x,y;
   char message_buffer[20];
   u8g2.setFont(u8g2_font_helvR08_tr);
-  if (filter == 1) strcpy_P(message_buffer, sp);
-  else if (filter == 2) strcpy_P(message_buffer, sw);
-  else if (filter == 3) strcpy_P(message_buffer, sdsp);
-  else if (filter == 4) strcpy_P(message_buffer, sdsw);
-  else if (filter == 5) strcpy_P(message_buffer, ssw);
-  else if (filter == 6) strcpy_P(message_buffer, ldn);
-  x = u8g2.getStrWidth(message_buffer);
-  y = u8g2.getFontAscent();
-  u8g2.drawStr(64-(x/2), 60, message_buffer);
+  if ((FSR < 32) || (FSR > 384)) {
+    strcpy_P(message_buffer, blank);
+  } else if (filter == 1) strcpy_P(message_buffer, sp);
+    else if (filter == 2) strcpy_P(message_buffer, sw);
+    else if (filter == 3) strcpy_P(message_buffer, sdsp);
+    else if (filter == 4) strcpy_P(message_buffer, sdsw);
+    else if (filter == 5) strcpy_P(message_buffer, ssw);
+    else if (filter == 6) strcpy_P(message_buffer, ldn);
+    x = u8g2.getStrWidth(message_buffer);
+    y = u8g2.getFontAscent();
+    u8g2.drawStr(64-(x/2), 60, message_buffer);
 }
 
 void initAK4493S() {
@@ -286,13 +329,6 @@ void initDigitalFilter(uint8_t switchState) {
     i2cWriteRegister(AK4493S_ADR, Control4, 0x01);  // SSLOWビットを1
     filter = 6;    
   }
-  /* ショートディレイ・スローロールオフ */
-//  else {
-//    i2cWriteRegister(AK4493S_ADR, Control3, 0x00);  // SLOWビットを0
-//    i2cWriteRegister(AK4493S_ADR, Control2, 0x22);  // SDビットを1
-//    i2cWriteRegister(AK4493S_ADR, Control4, 0x00);  // SSLOWビットを0
-//    filter = 3;    
-//  }
 }
 
 void monitorLED(uint16_t fs, uint8_t filter) {
