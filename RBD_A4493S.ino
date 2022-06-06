@@ -67,7 +67,7 @@ const char rapi[] PROGMEM = "Raspberry Pi";
 //const char world[] PROGMEM = "Hi-Res World!";
 
 uint8_t SW[] = {14, 15, 16};
-uint8_t LED[] = {7, 8, 13};
+uint8_t LED[] = {7, 8, 9};//13};
 uint8_t SW3 = 2;
 uint8_t RPI_OK = 3;
 uint8_t PDN = 17;
@@ -87,7 +87,7 @@ void setup() {
   pinMode(PDN, OUTPUT);
   pinMode(LED, OUTPUT);
 
-//  Serial.begin(9600);
+  Serial.begin(9600);
   FreqCount.begin(10);  // 周波数測定の開始．測定間隔を10ミリ秒に設定
   Wire.begin();
   Wire.setClock(400000);
@@ -99,10 +99,7 @@ void setup() {
   initAK4493S();
   initOledDisplay();
   delay(4000);
-  //Serial.print("SW Status = "); Serial.println(readDipSwitch());
-  //Serial.print("SW3 = "); Serial.println(digitalRead(SW3));
   initDigitalFilter(readDipSwitch());
-  //Serial.print("filter = "); Serial.println(filter);
 }
 
 void loop() {
@@ -110,7 +107,8 @@ void loop() {
   uint16_t FSR = freqCounter();
   messageOut(FSR, filter);
   monitorLED(FSR, filter);
-//  delay(30);
+  readAKRegister();
+  delay(300);
 }
 
 uint8_t i2cReadRegister(uint8_t sladr, uint8_t regadr) {
@@ -180,6 +178,7 @@ void initOledDisplay() {
 
 void waitRPI() {
   uint8_t x,y;
+  int i;
   char message_buffer[20];
   boolean go = LOW;
     u8g2.clearBuffer();
@@ -196,6 +195,20 @@ void waitRPI() {
       y = u8g2.getFontAscent();
       u8g2.drawStr(64-(x/2), 48+(y/2), message_buffer);
       u8g2.sendBuffer();
+//      for (i=0;i<255;i=i+10) {
+//        analogWrite(LED[2], i);
+//        delay(50);
+//      }
+//      for (i=255;i>0;i=i-10) {
+//        analogWrite(LED[2], i);
+//        delay(50);
+//      }
+      digitalWrite(LED[0], LOW);
+      digitalWrite(LED[1], LOW);
+      digitalWrite(LED[2], LOW);
+      delay(1000);
+      digitalWrite(LED[2], HIGH);
+      delay(1000);
     }
 //    else {
 //      strcpy_P(message_buffer, welcom);
@@ -280,9 +293,9 @@ void initAK4493S() {
   Wire.write(0x01); // Control5
   Wire.write(0x00); // SoundControl
   Wire.write(0x00); // Dsd2
-  Wire.write(0x04); // Control6
-  Wire.write(0x00); // Control7
-  Wire.write(0x08); // Control8
+//  Wire.write(0x04); // Control6
+//  Wire.write(0x00); // Control7
+//  Wire.write(0x08); // Control8
   Wire.endTransmission();
 }
 
@@ -412,4 +425,17 @@ void monitorLED(uint16_t fs, uint8_t filter) {
       digitalWrite(LED[2], HIGH);
     }
   }
+}
+
+void readAKRegister() {
+  uint8_t Ctrl2 = i2cReadRegister(AK4493S_ADR, Control2);
+  Serial.print("Ctrl2 = 0x"); Serial.println(Ctrl2, HEX);
+  uint8_t Ctrl4 = i2cReadRegister(AK4493S_ADR, Control4);
+  Serial.print("Ctrl4 = 0x"); Serial.println(Ctrl2, HEX);  
+  Ctrl2 &= 0x18;
+  Ctrl2 = Ctrl2 >> 3;
+  Ctrl4 &= 0x02;
+  Ctrl4 = Ctrl4 << 1;
+  uint8_t SamplingRate = Ctrl4 || Ctrl2;
+  Serial.print("fs = "); Serial.println(SamplingRate, HEX);
 }
