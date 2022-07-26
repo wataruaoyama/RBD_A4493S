@@ -73,6 +73,7 @@ uint8_t RPI_OK = 3;
 uint8_t PDN = 17;
 uint8_t receiver = 6;
 uint8_t START = 4;
+uint8_t VOL = A6;
 
 uint8_t filter;
 
@@ -88,6 +89,7 @@ void setup() {
   pinMode(PDN, OUTPUT);
 //  pinMode(LED, OUTPUT);
   pinMode(START, INPUT);
+  pinMode(VOL, INPUT);
 
 //  Serial.begin(9600);
   FreqCount.begin(10);  // 周波数測定の開始．測定間隔を10ミリ秒に設定
@@ -109,6 +111,7 @@ void setup() {
 void loop() {
   waitRPI();
   uint16_t FSR = freqCounter();
+  volumeCtrl();
   messageOut(FSR, filter);
   monitorLED(FSR, filter);
 
@@ -233,6 +236,7 @@ void messageOut(uint16_t FSR, uint8_t filter) {
   u8g2.clearBuffer();
   displayOledFSR(FSR);
   displayFilter(filter, FSR);
+  displayOledVolume(FSR);
   u8g2.sendBuffer();
 }
 
@@ -277,8 +281,9 @@ void displayFilter(uint8_t filter, uint16_t FSR) {
     else if (filter == 5) strcpy_P(message_buffer, ssw);
     else if (filter == 6) strcpy_P(message_buffer, ldn);
     x = u8g2.getStrWidth(message_buffer);
-    y = u8g2.getFontAscent();
-    u8g2.drawStr(64-(x/2), 60, message_buffer);
+//    y = u8g2.getFontAscent();
+//    u8g2.drawStr(64-(x/2), 60, message_buffer);
+    u8g2.drawStr(0, 60, message_buffer);
 }
 
 void initAK4493S() {
@@ -430,6 +435,48 @@ void monitorLED(uint16_t fs, uint8_t filter) {
       digitalWrite(LED[1], HIGH);
       digitalWrite(LED[2], HIGH);
     }
+  }
+}
+
+/* アッテネータ・レベルの設定 */
+void volumeCtrl() {
+  static int vbuf = 0;
+  int vin = analogRead(VOL) >> 3;
+  vin = 255 - vin;
+  if ( vin != vbuf ) {
+    Wire.beginTransmission(AK4493S_ADR);
+    Wire.write(LchATT);   // Lch ATT レジスタを指定    
+    if ( vin >= 255 ) {
+      Wire.write(0xFF);
+      Wire.write(0xFF);
+    } else if (vin <= 128) {
+      Wire.write(0x00);
+      Wire.write(0x00);
+    } else {
+    Wire.write(uint8_t(vin));
+    Wire.write(uint8_t(vin));
+    }
+    Wire.endTransmission();
+  }
+  vbuf = vin;
+//  Serial.print("vin = ");
+//  Serial.println(vin);
+}
+
+void displayOledVolume(uint16_t fs) {
+  float att = 255-i2cReadRegister(AK4493S_ADR, LchATT);
+  float value = att / 2;
+  char buf[10];
+  uint8_t n,m;
+  dtostrf(value,5,1,buf); // 数値を文字列に変換
+  n = u8g2.getStrWidth(buf); // 文字列の幅を取得
+  m = u8g2.getStrWidth("dB");
+  if ((fs<32) || (fs>384)) {
+    u8g2.drawStr(128-(n+m+2), 60, blank);
+    u8g2.drawStr(128-m, 60, blank);
+  } else {
+    u8g2.drawStr(128-n-m-2, 60, buf);
+    u8g2.drawStr(128-m, 60, "dB");    
   }
 }
 
