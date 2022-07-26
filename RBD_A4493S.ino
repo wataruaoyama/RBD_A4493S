@@ -142,6 +142,7 @@ uint8_t readDipSwitch() {
   return(switchStatus);
 }
 
+/* LRCKの周波数の検出 */
 uint16_t freqCounter() {
   if (FreqCount.available()) {
     uint16_t fs;
@@ -463,6 +464,7 @@ void volumeCtrl() {
 //  Serial.println(vin);
 }
 
+/* アッテネータレベルのOLED表示 */
 void displayOledVolume(uint16_t fs) {
   float att = 255-i2cReadRegister(AK4493S_ADR, LchATT);
   float value = att / 2;
